@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  ollama:
+    image: ollama/ollama
+    container_name: ollama_llm
+    volumes:
+      - ./models:/models
+    ports:
+      - "11434:11434"
+
+  database:
+    image: postgres:15
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: logsdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - logsdb-volume:/var/lib/postgresql/data
+
+  nginx:
+    build: ./nginx
+    container_name: vulnerable_nginx
+    ports:
+      - "8080:80"
+    depends_on:
+      - database
+    environment:
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_USER: user
+      DB_PASSWORD: pass
+      DB_NAME: logsdb
+
+volumes:
+  logsdb-volume:
