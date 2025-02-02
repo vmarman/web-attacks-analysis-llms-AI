@@ -1,68 +1,59 @@
-# Demo - Analizando vulnerabilidades web usando LLMs
+## Demo - Analyzing Web Vulnerabilities Using LLMs
 
-## Objetivo 
-Demostrar cómo los modelos de lenguaje a gran escala (LLMs) pueden acelerar la detección y el análisis de vulnerabilidades web, integrando en un entorno de prueba un servidor intencionalmente vulnerable, una base de datos de registros y un servicio de LLM. Se busca evidenciar cómo la capacidad de procesamiento de lenguaje natural permite correlacionar datos, identificar patrones sospechosos y ofrecer sugerencias de mitigación o investigación en tiempo real, optimizando así la respuesta y la toma de decisiones en ciberseguridad.
+Demonstrate how large language models (LLMs) can accelerate web vulnerability detection and analysis with the help of Artificial Intelligence, integrating an intentionally vulnerable server, a log database, and an LLM service into a test environment. The goal is to showcase how natural language processing capabilities enable data correlation, identification of suspicious patterns, and real-time mitigation or investigation suggestions, thereby optimizing response and decision-making in cybersecurity.
 
-![Demo LLMs](./imgs/llms.gif)
-
-
-## Instalar el ambiente
-### Requerimientos
-- Instalar Docker
-- Instalar docker compose
-- Instalar Git CLI
-
-### Instalación
-Clonar el project `demo_llm`
+### Installation  
+Clone the project `demo_llm`  
 ```
 ```
 
-- Ir al folder `demo_llm` para construir las imágenes y levantar los servicios
+- Go to the `demo_llm` folder to build the images and start the services  
 ```bash
 cd demo_llm
 docker compose build
 docker compose up -d
 ```
 
-- Verifica que los contenedores estén arriba:
+- Verify that the containers are up:  
 ```bash
 docker compose ps
 ```
 
-- Instalar el modelo de ollama
+- Install the Ollama model  
 ```bash
 docker exec -it ollama_llm ollama pull llama3
 ```
 
-- Comprueba que `oLlama` corre en el puerto `11434`:
+- Check that `oLlama` is running on port `11434`:  
 ```bash
 curl http://localhost:11434/api/chat -d '{
   "model": "llama3",
   "messages": [
-    { "role": "user", "content": "Hola, oLlama. ¿Cómo estás?" }
+    { "role": "user", "content": "Hello, oLlama. How are you?" }
   ]
 }'
 ```
-Deberías recibir una respuesta en texto proveniente del LLM dividido en chunks.
+You should receive a text response from the LLM in chunks.
 
-
-- Prueba de la Base de Datos. Conéctate al contenedor de PostgreSQL:
+### Database Test  
+- Connect to the PostgreSQL container:  
 ```bash
 docker exec -it postgres_db psql -U user -d logsdb
 ```
 
-- Muestra las tablas:
+- Show the tables:  
 ```bash
 \dt
 ```
-Debería existir la tabla `nginx_logs`.
+The table `nginx_logs` should exist.
 
-- Sal de psql con:
+- Exit psql with:  
 ```bash
 \q
 ```
 
-- Prueba del Servicio Nginx y Inserción de Logs. Realiza llamadas de prueba al servicio Nginx en http://localhost:8080, incluyendo un id malicioso (SQLi):
+### Nginx Service and Log Insertion Test  
+Make test requests to the Nginx service at http://localhost:8080, including a malicious ID (SQLi):  
 ```
 curl "http://localhost:8080/"
 curl "http://localhost:8080/?id=1"
@@ -72,22 +63,22 @@ curl "http://localhost:8080/?id='; --"
 curl "http://localhost:8080/?id=1' AND 'a'='a --"
 ```
 
-- Verifica los logs en la base de datos. Vuelve a psql:
+- Check the logs in the database. Return to psql:  
 ```bash
 docker exec -it postgres_db psql -U user -d logsdb
 ```
 
-- Corre la consulta:
+- Run the query:  
 ```bash
 SELECT * FROM nginx_logs;
 ```
 
-- Sal con `\q`.
+- Exit with `\q`.
 
-Si todo funciona correctamente, significa que Nginx está registrando los accesos y el script `log_to_db.py` está insertando esos accesos en la tabla `nginx_logs`.
+If everything works correctly, it means that Nginx is logging access, and the `log_to_db.py` script is inserting those logs into the `nginx_logs` table.
 
-### Análisis de logs usando LLMs
-Prueba el Programa en Python `collect_logs.py` para hacer el análisis de los logs.
+### Log Analysis Using LLMs  
+Test the Python program `collect_logs.py` to analyze the logs.  
 
 ```bash
 export DB_HOST=localhost
@@ -98,30 +89,31 @@ export DB_NAME=logsdb
 export OLLAMA_URL=http://localhost:11434
 ```
 
-- Instala las librerias requeridas de python en un environment
+- Install the required Python libraries in a virtual environment  
 ```bash
 python3 -m venv env
 source env/bin/activate
 pip3 install psycopg2 requests
 ```
 
-- Ejecuta el script:
+- Run the script:  
 ```bash
 cd python-client
 ./collect_logs.py
 ```
 
-Verás en consola los últimos 5 logs. Luego te pedirá una pregunta.
+You will see the last five logs in the console. Then, it will ask you a question.  
 
-El script enviará los logs y tu pregunta al LLM a través de la API de oLlama. Deberías recibir alguna respuesta basada en el modelo que tengas cargado.
+The script will send the logs and your question to the LLM through the oLlama API. You should receive a response based on the loaded model.  
 
-Podrías preguntar:
+You could ask:  
 ```
-Existe algún tipo de ataque en los logs? Y cuales son las recomendaciones para investigar y mitigar?
+Are there any attacks in the logs? What are the recommendations for investigation and mitigation?
 ```
 
-## Detener el ambiente
-Para detener el ambiente, ejecutar el siguiente comando:
+## Stop the Environment  
+To stop the environment, run the following command:  
 ```bash
 docker compose down
 ```
+
